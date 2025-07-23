@@ -1,0 +1,47 @@
+/* 移动端优先设计 */
+.container {
+    padding: 20px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin: 30px 0;
+}
+
+.btn {
+    padding: 20px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: opacity 0.3s;
+}
+
+.btn-red { background: #ff4444; color: white; }
+.btn-green { background: #00C851; color: white; }
+
+.stats-section,
+.history-section {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.record-list {
+    list-style: none;
+    padding: 0;
+}
+
+.record-list li {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+@media (hover: hover) {
+    .btn:hover { opacity: 0.9; }
+}

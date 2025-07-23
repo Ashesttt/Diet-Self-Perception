@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ user.username }}的饮食记录</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        {% if existing_record %}
+        <div class="status-box">
+            <p>您今天已经记录过了，请明天再来！</p>
+        </div>
+        {% else %}
+        <div class="button-group">
+            <button class="btn btn-red" onclick="submitRecord('eat_much')">吃多了</button>
+            <button class="btn btn-green" onclick="submitRecord('not_eat_much')">没吃多</button>
+        </div>
+        {% endif %}
+
+        <div class="stats-section">
+            <h2>统计概览</h2>
+            <p>总记录天数: {{ stats.total_days }}</p>
+            <p>吃多了: {{ stats.eat_much_count }}次 ({{ stats.eat_much_percent }}%)</p>
+            <p>没吃多: {{ stats.not_eat_much_count }}次 ({{ stats.not_eat_much_percent }}%)</p>
+            <p>最近连续没吃多: {{ stats.current_not_eat_much_streak }}天</p>
+            <p>最近连续吃多: {{ stats.current_eat_much_streak }}天</p>
+        </div>
+
+        <div class="history-section">
+            <h2>历史记录</h2>
+            <ul class="record-list">
+                {% for record in records %}
+                <li>{{ record.record_date }} - {{ '吃多了' if record.choice == 'eat_much' else '没吃多' }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <script>
+    async function submitRecord(choice) {
+        try {
+            const response = await fetch('/submit', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: '{{ user.username }}', choice: choice})
+            });
+            if (response.ok) {
+                location.reload();
+            }
+        } catch (error) {
+            console.error('提交失败:', error);
+        }
+    }
+    </script>
+</body>
+</html>
