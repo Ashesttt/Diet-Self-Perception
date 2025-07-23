@@ -2,12 +2,12 @@ version: '3.8'
 
 services:
   web:
-    build: .
+    image: diet-self-perception:latest
     ports:
       - "8000:8000"
     volumes:
       - ./data.db:/app/data.db
-      - ./app:/app
     restart: always
     environment:
-      - UVICORN_RELOAD=true
+      - UVICORN_RELOAD=false
+      - PYTHONUNBUFFERED=1
