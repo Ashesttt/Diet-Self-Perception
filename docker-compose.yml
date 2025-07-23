@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   web:
-    image: diet-self-perception:latest
+    image: Jerryestt/diet-self-perception:latest
     ports:
       - "8000:8000"
     volumes:
