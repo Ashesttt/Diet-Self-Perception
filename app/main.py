@@ -84,59 +84,66 @@ async def user_page(request: Request, username: str, db: Session = Depends(get_d
     ).count()
     not_eat_much_count = total_records - eat_much_count
 
-    # 计算连续天数
-    current_streak = {'eat_much': 0, 'not_eat_much': 0}
-    for record in sorted(records, key=lambda x: x.record_date, reverse=True):
-        if record.choice == 'eat_much':
-            if current_streak['eat_much'] == 0:
-                current_streak['eat_much'] += 1
-            else:
-                break
-        else:
-            if current_streak['not_eat_much'] == 0:
-                current_streak['not_eat_much'] += 1
+    # 计算连续打卡天数（无论吃多还是没吃多）
+    consecutive_days = 0
+    if records:
+        sorted_records = sorted(records, key=lambda x: x.record_date, reverse=True)
+        prev_date = sorted_records[0].record_date
+        consecutive_days = 1
+        for record in sorted_records[1:]:
+            if (prev_date - record.record_date).days == 1:
+                consecutive_days += 1
+                prev_date = record.record_date
             else:
                 break
 
-    # 计算最长连续记录
-    max_streak = {'eat_much': 0, 'not_eat_much': 0}
-    current_eat_much = 0
-    current_not_eat_much = 0
-    for record in sorted(records, key=lambda x: x.record_date):
-        if record.choice == 'eat_much':
-            current_eat_much += 1
-            current_not_eat_much = 0
-            max_streak['eat_much'] = max(max_streak['eat_much'], current_eat_much)
-        else:
-            current_not_eat_much += 1
-            current_eat_much = 0
-            max_streak['not_eat_much'] = max(max_streak['not_eat_much'], current_not_eat_much)
+    # 获取今日饮食记录
+    today = date.today()
+    today_food_record = db.query(FoodRecord).filter(
+        FoodRecord.user_id == user.id,
+        FoodRecord.record_date == today
+    ).first()
 
-    # 计算平均每周记录次数
-    if total_records > 0 and records:
-        first_record_date = min(records, key=lambda x: x.record_date).record_date
-        days_since_first_record = (date.today() - first_record_date).days
-        weeks = days_since_first_record / 7
-        avg_weekly_records = round(total_records / weeks, 1) if weeks > 0 else total_records
-    else:
-        avg_weekly_records = 0
+    # 计算各餐平均摄入量
+    food_records = db.query(FoodRecord).filter(FoodRecord.user_id == user.id).all()
+    breakfast_total = sum(fr.breakfast for fr in food_records if fr.breakfast > 0)
+    lunch_total = sum(fr.lunch for fr in food_records if fr.lunch > 0)
+    dinner_total = sum(fr.dinner for fr in food_records if fr.dinner > 0)
+    snack_total = sum(fr.snack for fr in food_records if fr.snack > 0)
+    
+    breakfast_days = sum(1 for fr in food_records if fr.breakfast > 0)
+    lunch_days = sum(1 for fr in food_records if fr.lunch > 0)
+    dinner_days = sum(1 for fr in food_records if fr.dinner > 0)
+    snack_days = sum(1 for fr in food_records if fr.snack > 0)
+
+    avg_breakfast_calories = round(breakfast_total / breakfast_days, 1) if breakfast_days else 0
+    avg_lunch_calories = round(lunch_total / lunch_days, 1) if lunch_days else 0
+    avg_dinner_calories = round(dinner_total / dinner_days, 1) if dinner_days else 0
+    avg_snack_calories = round(snack_total / snack_days, 1) if snack_days else 0
+
+    # 计算平均每日摄入热量和热量缺口
+    total_calories = sum(fr.total_calories for fr in food_records if fr.total_calories)
+    food_days = len([fr for fr in food_records if fr.total_calories])
+    avg_daily_calories = round(total_calories / food_days, 1) if food_days > 0 else 0
 
     return templates.TemplateResponse('user.html', {
         'request': request,
         'user': user,
         'existing_record': existing_record,
         'records': records,
+        'today_food_record': today_food_record,
         'stats': {
             'total_days': total_records,
             'eat_much_count': eat_much_count,
-            'eat_much_percent': round(eat_much_count/total_records*100, 2) if total_records else 0,
+            'eat_much_percent': round(eat_much_count / total_records * 100, 1) if total_records > 0 else 0,
             'not_eat_much_count': not_eat_much_count,
-            'not_eat_much_percent': round(not_eat_much_count/total_records*100, 2) if total_records else 0,
-            'current_eat_much_streak': current_streak['eat_much'],
-            'current_not_eat_much_streak': current_streak['not_eat_much'],
-            'max_eat_much_streak': max_streak['eat_much'],
-            'max_not_eat_much_streak': max_streak['not_eat_much'],
-            'avg_weekly_records': avg_weekly_records
+            'not_eat_much_percent': round(not_eat_much_count / total_records * 100, 1) if total_records > 0 else 0,
+            'consecutive_days': consecutive_days,
+            'avg_calorie_deficit': round(user.bmr - avg_daily_calories, 1) if user.bmr and avg_daily_calories else 0,
+            'avg_breakfast_calories': avg_breakfast_calories,
+            'avg_lunch_calories': avg_lunch_calories,
+            'avg_dinner_calories': avg_dinner_calories,
+            'avg_snack_calories': avg_snack_calories
         }
     })
 
@@ -203,6 +210,34 @@ async def user_history(request: Request, username: str, db: Session = Depends(ge
     records = db.query(Record).filter(
         Record.user_id == user.id
     ).order_by(Record.record_date.desc()).all()
+
+    # 获取所有食物记录并按日期存储
+    food_records = db.query(FoodRecord).filter(
+        FoodRecord.user_id == user.id
+    ).all()
+    food_record_map = {fr.record_date: fr for fr in food_records}
+
+    # 合并记录数据
+    for record in records:
+        food_record = food_record_map.get(record.record_date)
+        if food_record:
+            record.breakfast_calories = food_record.breakfast
+            record.lunch_calories = food_record.lunch
+            record.dinner_calories = food_record.dinner
+            record.snack_calories = food_record.snack
+            record.total_calories = food_record.total_calories
+            # 计算热量缺口（BMR - 总卡路里）
+            if user.bmr:
+                record.calorie_deficit = user.bmr - food_record.total_calories
+            else:
+                record.calorie_deficit = 0
+        else:
+            record.breakfast_calories = 0
+            record.lunch_calories = 0
+            record.dinner_calories = 0
+            record.snack_calories = 0
+            record.total_calories = 0
+            record.calorie_deficit = 0
 
     return templates.TemplateResponse('history.html', {
         'request': request,

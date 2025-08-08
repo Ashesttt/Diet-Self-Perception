@@ -23,10 +23,9 @@
             <h2>统计概览</h2>
             <div class="stats-grid">
                 <div class="stat-card">
-                    <p class="stat-label">总记录天数</p>
-                    <p class="stat-value">{{ stats.total_days }}</p>
+                    <p class="stat-label">连续打卡天数</p>
+                    <p class="stat-value">{{ stats.consecutive_days }}天</p>
                 </div>
-                
                 <div class="stat-card">
                     <p class="stat-label">吃多了</p>
                     <p class="stat-value">{% if stats.eat_much_count is defined %}{{ stats.eat_much_count }}次 ({% if stats.eat_much_percent is defined %}{{ stats.eat_much_percent }}%{% else %}0%{% endif %}){% else %}0次 (0%){% endif %}</p>
@@ -34,41 +33,62 @@
                         <div class="progress" style='width: {% if stats.eat_much_percent is defined %}{{ stats.eat_much_percent }}%{% else %}0%{% endif %}; background-color: #ff4444;'></div>
                     </div>
                 </div>
-                
                 <div class="stat-card">
                     <p class="stat-label">没吃多</p>
                     <p class="stat-value">{% if stats.not_eat_much_count is defined %}{{ stats.not_eat_much_count }}次 ({% if stats.not_eat_much_percent is defined %}{{ stats.not_eat_much_percent }}%{% else %}0%{% endif %}){% else %}0次 (0%){% endif %}</p>
                     <div class="progress-bar">
-                        <div class="progress" style="width: {% if stats.not_eat_much_percent is defined %}{{ stats.not_eat_much_percent }}%{% else %}0%{% endif %}; background-color: #00C851;"></div>
+                        <div class="progress" style='width: {% if stats.not_eat_much_percent is defined %}{{ stats.not_eat_much_percent }}%{% else %}0%{% endif %}; background-color: #4CAF50;'></div>
                     </div>
                 </div>
-                
                 <div class="stat-card">
-                    <p class="stat-label">最近连续没吃多</p>
-                    <p class="stat-value">{{ stats.current_not_eat_much_streak }}天</p>
+                    <p class="stat-label">总记录天数</p>
+                    <p class="stat-value">{{ stats.total_days }}</p>
                 </div>
-                
                 <div class="stat-card">
-                    <p class="stat-label">最近连续吃多</p>
-                    <p class="stat-value">{{ stats.current_eat_much_streak }}天</p>
-                </div>
-                
-                <div class="stat-card">
-                    <p class="stat-label">最长连续没吃多</p>
-                    <p class="stat-value">{{ stats.max_not_eat_much_streak }}天</p>
-                </div>
-                
-                <div class="stat-card">
-                    <p class="stat-label">最长连续吃多</p>
-                    <p class="stat-value">{{ stats.max_eat_much_streak }}天</p>
-                </div>
-                
-                <div class="stat-card">
-                    <p class="stat-label">平均每周记录</p>
-                    <p class="stat-value">{{ stats.avg_weekly_records }}次</p>
+                    <p class="stat-label">平均热量缺口</p>
+                    <p class="stat-value">{{ stats.avg_calorie_deficit }}千卡</p>
+                    <div class="progress-bar">
+                        <div class="progress" style='width: {{ stats.avg_calorie_deficit / 10 }}%; background-color: {% if stats.avg_calorie_deficit <= 500 %}hsl({{ 240 - (stats.avg_calorie_deficit / 500) * 120 }}, 100%, 50%){% else %}hsl({{ 120 - ((stats.avg_calorie_deficit - 500) / 500) * 120 }}, 100%, 50%){% endif %};'></div>
+                    </div>
                 </div>
             </div>
         </div>
+
+    {% if today_food_record %}
+    <div class="stats-section">
+        <h2>今天的饮食</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <p class="stat-label">早餐</p>
+                <p class="stat-value">{{ today_food_record.breakfast }}千卡</p>
+                <div class="progress-bar">
+                    <div class="progress" style='width: {{ today_food_record.breakfast / (stats.avg_breakfast_calories * 2) * 100 }}%; background-color: {% if stats.avg_breakfast_calories <= 500 %}hsl({{ 240 - (stats.avg_breakfast_calories / 500) * 120 }}, 100%, 50%){% else %}hsl({{ 120 - ((stats.avg_breakfast_calories - 500) / 500) * 120 }}, 100%, 50%){% endif %};'></div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <p class="stat-label">午餐</p>
+                <p class="stat-value">{{ today_food_record.lunch }}千卡</p>
+                <div class="progress-bar">
+                    <div class="progress" style='width: {{ today_food_record.lunch / (stats.avg_lunch_calories * 2) * 100 }}%; background-color: {% if stats.avg_lunch_calories <= 500 %}hsl({{ 240 - (stats.avg_lunch_calories / 500) * 120 }}, 100%, 50%){% else %}hsl({{ 120 - ((stats.avg_lunch_calories - 500) / 500) * 120 }}, 100%, 50%){% endif %};'></div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <p class="stat-label">晚餐</p>
+                <p class="stat-value">{{ today_food_record.dinner }}千卡</p>
+                <div class="progress-bar">
+                    <div class="progress" style='width: {{ today_food_record.dinner / (stats.avg_dinner_calories * 2) * 100 }}%; background-color: {% if stats.avg_dinner_calories <= 500 %}hsl({{ 240 - (stats.avg_dinner_calories / 500) * 120 }}, 100%, 50%){% else %}hsl({{ 120 - ((stats.avg_dinner_calories - 500) / 500) * 120 }}, 100%, 50%){% endif %};'></div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <p class="stat-label">零食</p>
+                <p class="stat-value">{{ today_food_record.snack }}千卡</p>
+                <div class="progress-bar">
+                    <div class="progress" style='width: {{ today_food_record.snack / (stats.avg_snack_calories * 2) * 100 }}%; background-color: {% if stats.avg_snack_calories <= 100 %}hsl({{ 240 - (stats.avg_snack_calories / 100) * 120 }}, 100%, 50%){% else %}hsl({{ 120 - ((stats.avg_snack_calories - 100) / 100) * 120 }}, 100%, 50%){% endif %};'></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <div class="button-group">
         <button class="btn" style="background: #4CAF50 !important; color: white !important; border: none !important;" onclick="location.href='/u/{{ user.username }}/statistics'">统计总览</button>

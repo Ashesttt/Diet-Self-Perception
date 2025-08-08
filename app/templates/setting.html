@@ -24,7 +24,7 @@
                 <label for="weight">体重 (kg)</label>
                 <select id="weight" name="weight" required>
                     {% for value in range(30, 201) %}
-                        <option value="{{ value }}" {% if user.weight == value %}selected{% endif %}>{{ value }}</option>
+                        <option value="{{ value }}" {% if user.weight == value or (not user.weight and value == 70) %}selected{% endif %}>{{ value }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -33,7 +33,7 @@
                 <label for="height">身高 (cm)</label>
                 <select id="height" name="height" required>
                     {% for value in range(100, 251) %}
-                        <option value="{{ value }}" {% if user.height == value %}selected{% endif %}>{{ value }}</option>
+                        <option value="{{ value }}" {% if user.height == value or (not user.height and value == 170) %}selected{% endif %}>{{ value }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -42,7 +42,7 @@
                 <label for="age">年龄</label>
                 <select id="age" name="age" required>
                     {% for value in range(10, 101) %}
-                        <option value="{{ value }}" {% if user.age == value %}selected{% endif %}>{{ value }}</option>
+                        <option value="{{ value }}" {% if user.age == value or (not user.age and value == 30) %}selected{% endif %}>{{ value }}</option>
                     {% endfor %}
                 </select>
             </div>

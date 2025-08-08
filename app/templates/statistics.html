@@ -50,6 +50,14 @@
                 </div>
 
                 <div class="stat-card">
+                    <p class="stat-label">平均热量缺口</p>
+                    <p class="stat-value">{{ stats.avg_calorie_deficit }}千卡</p>
+                    <div class="progress-bar">
+                        <div class="progress" style='width: {{ stats.avg_calorie_deficit / 10 }}%; background-color: {% if stats.avg_calorie_deficit <= 500 %}hsl({{ 240 - (stats.avg_calorie_deficit / 500) * 120 }}, 100%, 50%){% else %}hsl({{ 120 - ((stats.avg_calorie_deficit - 500) / 500) * 120 }}, 100%, 50%){% endif %};'></div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
                     <p class="stat-label">总的热量缺口</p>
                     <p class="stat-value">{{ stats.total_calorie_deficit }} 千卡</p>
                 </div>
