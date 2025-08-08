@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   web:
-    image: jerryestt/diet-self-perception:latest
+    image: docker.1ms.run/jerryestt/diet-self-perception:latest
     ports:
       - "8000:8000"
     volumes:

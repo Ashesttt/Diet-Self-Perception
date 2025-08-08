@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ user.username }}的具体饮食</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ user.username }}的具体饮食</h1>
+            <div class="button-group">
+                <button class="btn" style="background: #0f0929; color: white" onclick="location.href='/u/{{ user.username }}'">返回主页</button>
+
+            </div>
+        </div>
+
+        {% if message %}
+        <div class="message-box">{{ message }}</div>
+        {% endif %}
+
+        {% if existing_record %}
+        <div class="status-box">
+            <p>今日已记录饮食，您可以修改后重新提交。</p>
+            <p>总热量: {{ existing_record.total_calories }} kcal</p>
+        </div>
+        {% endif %}
+
+        <form method="post" class="detail-form">
+            <div class="form-group">
+                <label for="breakfast">早餐 (kcal)</label>
+                <select id="breakfast" name="breakfast" required>
+                    {% for value in range(0, 2001, 100) %}
+                        <option value="{{ value }}" {% if existing_record and existing_record.breakfast == value %}selected{% endif %}>{{ value }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="lunch">午餐 (kcal)</label>
+                <select id="lunch" name="lunch" required>
+                    {% for value in range(0, 2001, 100) %}
+                        <option value="{{ value }}" {% if existing_record and existing_record.lunch == value %}selected{% endif %}>{{ value }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="dinner">晚餐 (kcal)</label>
+                <select id="dinner" name="dinner" required>
+                    {% for value in range(0, 2001, 100) %}
+                        <option value="{{ value }}" {% if existing_record and existing_record.dinner == value %}selected{% endif %}>{{ value }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="snack">零食 (kcal)</label>
+                <select id="snack" name="snack" required>
+                    {% for value in range(0, 401, 20) %}
+                        <option value="{{ value }}" {% if existing_record and existing_record.snack == value %}selected{% endif %}>{{ value }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="button-group">
+                <button type="submit" class="btn btn-green">提交记录</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
