@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ user.username }}的饮食图表</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ user.username }}的饮食图表</h1>
+            <div class="button-group">
+                <button class="btn" style="background: #0f0929; color: white" onclick="location.href='/u/{{ user.username }}'">返回主页</button>
+            </div>
+        </div>
+
+        <div class="date-filter">
+            <label for="date-range">选择时间范围:</label>
+            <select id="date-range" onchange="updateCharts()">
+                <option value="7">最近7天</option>
+                <option value="30" selected>最近30天</option>
+                <option value="all">全部记录</option>
+            </select>
+        </div>
+
+        <div class="charts-container">
+            <!-- 1. 每日热量摄入趋势图 -->
+            <div class="chart-card">
+                <h2>每日热量摄入趋势</h2>
+                <canvas id="caloriesTrendChart"></canvas>
+            </div>
+
+            <!-- 2. 各餐热量占比图 -->
+            <div class="chart-card">
+                <h2>各餐热量占比</h2>
+                <canvas id="mealsPieChart"></canvas>
+            </div>
+
+            <!-- 3. 吃多了vs没吃多记录图 -->
+            <div class="chart-card">
+                <h2>饮食控制记录</h2>
+                <canvas id="eatingHabitsChart"></canvas>
+            </div>
+
+            <!-- 4. 热量缺口趋势图 -->
+            <div class="chart-card">
+                <h2>热量缺口趋势</h2>
+                <canvas id="calorieDeficitChart"></canvas>
+            </div>
+
+            <!-- 5. 饮食规律热力图 -->
+            <div class="chart-card">
+                <h2>饮食规律热力图</h2>
+                <canvas id="eatingPatternsChart"></canvas>
+            </div>
+
+            <!-- 6. 连续打卡天数趋势图 -->
+            <div class="chart-card">
+                <h2>连续打卡天数</h2>
+                <canvas id="streakChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 图表数据
+        const chartData = {
+            dates: {{ dates|tojson }},
+            calories: {{ calories|tojson }},
+            bmr: {{ user.bmr }},
+            meals: {{ meals|tojson }},
+            eatingHabits: {{ eating_habits|tojson }},
+            calorieDeficit: {{ calorie_deficit|tojson }},
+            eatingPatterns: {{ eating_patterns|tojson }},
+            streaks: {{ streaks|tojson }}
+        };
+
+        // 初始化图表
+        let charts = {};
+
+        function initCharts() {
+            // 1. 每日热量摄入趋势图
+            const caloriesTrendCtx = document.getElementById('caloriesTrendChart').getContext('2d');
+            charts.caloriesTrend = new Chart(caloriesTrendCtx, {
+                type: 'line',
+                data: {
+                    labels: chartData.dates,
+                    datasets: [{
+                        label: '热量摄入',
+                        data: chartData.calories,
+                        borderColor: '#3e95cd',
+                        backgroundColor: 'rgba(62, 149, 205, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.2
+                    }, {
+                        label: '基础代谢率(BMR)',
+                        data: Array(chartData.dates.length).fill(chartData.bmr),
+                        borderColor: '#ff6384',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        fill: false,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '每日热量摄入与BMR对比'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '热量(千卡)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '日期'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 2. 各餐热量占比图
+            const mealsPieCtx = document.getElementById('mealsPieChart').getContext('2d');
+            charts.mealsPie = new Chart(mealsPieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['早餐', '午餐', '晚餐', '零食'],
+                    datasets: [{
+                        data: [
+                            chartData.meals.breakfast,
+                            chartData.meals.lunch,
+                            chartData.meals.dinner,
+                            chartData.meals.snack
+                        ],
+                        backgroundColor: [
+                            '#ff6384',
+                            '#36a2eb',
+                            '#ffce56',
+                            '#4bc0c0'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '各餐热量占比'
+                        },
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+
+            // 3. 吃多了vs没吃多记录图
+            const eatingHabitsCtx = document.getElementById('eatingHabitsChart').getContext('2d');
+            charts.eatingHabits = new Chart(eatingHabitsCtx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.dates,
+                    datasets: [{
+                        label: '吃多了',
+                        data: chartData.eatingHabits.eat_much,
+                        backgroundColor: '#ff6384'
+                    }, {
+                        label: '没吃多',
+                        data: chartData.eatingHabits.not_eat_much,
+                        backgroundColor: '#36a2eb'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '每日饮食控制记录'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '次数'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '日期'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 4. 热量缺口趋势图
+            const calorieDeficitCtx = document.getElementById('calorieDeficitChart').getContext('2d');
+            charts.calorieDeficit = new Chart(calorieDeficitCtx, {
+                type: 'line',
+                data: {
+                    labels: chartData.dates,
+                    datasets: [{
+                        label: '热量缺口',
+                        data: chartData.calorieDeficit,
+                        borderColor: function(context) {
+                            const value = context.raw;
+                            if (value < 0) return '#ff6384'; // 负缺口(红色)
+                            if (value < 300) return '#ffce56'; // 缺口不足(黄色)
+                            if (value <= 500) return '#4bc0c0'; // 合理缺口(绿色)
+                            return '#36a2eb'; // 缺口过大(蓝色)
+                        },
+                        backgroundColor: function(context) {
+                            const value = context.raw;
+                            let color;
+                            if (value < 0) color = 'rgba(255, 99, 132, 0.1)';
+                            else if (value < 300) color = 'rgba(255, 206, 86, 0.1)';
+                            else if (value <= 500) color = 'rgba(75, 192, 192, 0.1)';
+                            else color = 'rgba(54, 162, 235, 0.1)';
+                            return color;
+                        },
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.2
+                    }, {
+                        label: '合理缺口下限(300千卡)',
+                        data: Array(chartData.dates.length).fill(300),
+                        borderColor: '#4bc0c0',
+                        borderWidth: 1,
+                        borderDash: [5, 5],
+                        fill: false,
+                        pointRadius: 0
+                    }, {
+                        label: '合理缺口上限(500千卡)',
+                        data: Array(chartData.dates.length).fill(500),
+                        borderColor: '#4bc0c0',
+                        borderWidth: 1,
+                        borderDash: [5, 5],
+                        fill: false,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '热量缺口趋势'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: '热量缺口(千卡)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '日期'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 5. 饮食规律热力图 (使用折线图模拟)
+            const eatingPatternsCtx = document.getElementById('eatingPatternsChart').getContext('2d');
+            charts.eatingPatterns = new Chart(eatingPatternsCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+                    datasets: [{
+                        label: '早餐',
+                        data: chartData.eatingPatterns.breakfast,
+                        backgroundColor: 'rgba(255, 99, 132, 0.7)'
+                    }, {
+                        label: '午餐',
+                        data: chartData.eatingPatterns.lunch,
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)'
+                    }, {
+                        label: '晚餐',
+                        data: chartData.eatingPatterns.dinner,
+                        backgroundColor: 'rgba(255, 206, 86, 0.7)'
+                    }, {
+                        label: '零食',
+                        data: chartData.eatingPatterns.snack,
+                        backgroundColor: 'rgba(75, 192, 192, 0.7)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '每周饮食规律'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '平均热量(千卡)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '星期'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 6. 连续打卡天数趋势图
+            const streakCtx = document.getElementById('streakChart').getContext('2d');
+            charts.streak = new Chart(streakCtx, {
+                type: 'line',
+                data: {
+                    labels: chartData.dates,
+                    datasets: [{
+                        label: '连续打卡天数',
+                        data: chartData.streaks,
+                        borderColor: '#9966ff',
+                        backgroundColor: 'rgba(153, 102, 255, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '连续打卡天数趋势'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '天数'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '日期'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 更新图表数据
+        function updateCharts() {
+            const days = document.getElementById('date-range').value;
+            // 这里可以添加AJAX请求来获取不同时间范围的数据
+            // 为简化示例，我们只是重新渲染相同的数据
+            for (let chart in charts) {
+                charts[chart].destroy();
+            }
+            initCharts();
+        }
+
+        // 页面加载完成后初始化图表
+        document.addEventListener('DOMContentLoaded', initCharts);
+    </script>
+</body>
+</html>

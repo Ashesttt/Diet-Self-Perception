@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, Column, Integer, String, Date, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from datetime import date
+from datetime import date, timedelta
 import os
 
 Base = declarative_base()
@@ -180,6 +180,156 @@ async def submit_setting(request: Request, username: str, db: Session = Depends(
         'request': request, 
         'user': user, 
         'message': '设置已保存，您的基础代谢率为: {:.2f} kcal/天'.format(user.bmr)
+    })
+
+@app.get('/u/{username}/charts')
+async def charts_page(request: Request, username: str, db: Session = Depends(get_db)):
+    # 获取用户
+    user = db.query(User).filter(User.username == username).first()
+    if not user:
+        user = User(username=username)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    # 获取最近30天的数据
+    today = date.today()
+    thirty_days_ago = today - timedelta(days=30)
+
+    # 获取食物记录
+    food_records = db.query(FoodRecord).filter(
+        FoodRecord.user_id == user.id,
+        FoodRecord.record_date >= thirty_days_ago
+    ).order_by(FoodRecord.record_date).all()
+
+    # 获取饮食选择记录
+    record_choices = db.query(Record).filter(
+        Record.user_id == user.id,
+        Record.record_date >= thirty_days_ago
+    ).order_by(Record.record_date).all()
+
+    # 准备图表数据
+    dates = []
+    calories = []
+    calorie_deficit = []
+    eat_much = []
+    not_eat_much = []
+    streaks = []
+
+    # 初始化日期范围
+    current_date = thirty_days_ago
+    date_to_calories = {}
+    date_to_choice = {}
+
+    # 填充食物记录数据
+    for record in food_records:
+        date_str = record.record_date.strftime('%Y-%m-%d')
+        date_to_calories[date_str] = record.total_calories
+        if user.bmr:
+            date_to_calories[f'{date_str}_deficit'] = user.bmr - record.total_calories
+
+    # 填充饮食选择数据
+    for record in record_choices:
+        date_str = record.record_date.strftime('%Y-%m-%d')
+        date_to_choice[date_str] = record.choice
+
+    # 计算连续打卡天数
+    consecutive_days = 0
+    prev_date = None
+
+    # 生成日期序列和对应数据
+    while current_date <= today:
+        date_str = current_date.strftime('%Y-%m-%d')
+        dates.append(date_str)
+
+        # 热量数据
+        calories.append(date_to_calories.get(date_str, 0))
+
+        # 热量缺口数据
+        deficit = date_to_calories.get(f'{date_str}_deficit', 0) if user.bmr else 0
+        calorie_deficit.append(deficit)
+
+        # 饮食选择数据
+        eat_much.append(1 if date_to_choice.get(date_str) == 'eat_much' else 0)
+        not_eat_much.append(1 if date_to_choice.get(date_str) == 'not_eat_much' else 0)
+
+        # 连续打卡天数
+        if date_str in date_to_choice:
+            if prev_date and (current_date - prev_date).days == 1:
+                consecutive_days += 1
+            else:
+                consecutive_days = 1
+            prev_date = current_date
+        else:
+            consecutive_days = 0
+        streaks.append(consecutive_days)
+
+        current_date += timedelta(days=1)
+
+    # 各餐热量占比
+    breakfast_total = sum(fr.breakfast for fr in food_records if fr.breakfast)
+    lunch_total = sum(fr.lunch for fr in food_records if fr.lunch)
+    dinner_total = sum(fr.dinner for fr in food_records if fr.dinner)
+    snack_total = sum(fr.snack for fr in food_records if fr.snack)
+    total = breakfast_total + lunch_total + dinner_total + snack_total
+
+    meals = {
+        'breakfast': breakfast_total,
+        'lunch': lunch_total,
+        'dinner': dinner_total,
+        'snack': snack_total
+    }
+
+    # 饮食规律热力图数据 (按星期)
+    weekday_patterns = {
+        'breakfast': [0, 0, 0, 0, 0, 0, 0],  # 周日到周六
+        'lunch': [0, 0, 0, 0, 0, 0, 0],
+        'dinner': [0, 0, 0, 0, 0, 0, 0],
+        'snack': [0, 0, 0, 0, 0, 0, 0],
+        'count': [0, 0, 0, 0, 0, 0, 0]
+    }
+
+    for record in food_records:
+        weekday = record.record_date.weekday()  # 0=周一, 6=周日
+        # 转换为周日=0, 周六=6
+        adjusted_weekday = (weekday + 1) % 7
+        weekday_patterns['count'][adjusted_weekday] += 1
+        weekday_patterns['breakfast'][adjusted_weekday] += record.breakfast or 0
+        weekday_patterns['lunch'][adjusted_weekday] += record.lunch or 0
+        weekday_patterns['dinner'][adjusted_weekday] += record.dinner or 0
+        weekday_patterns['snack'][adjusted_weekday] += record.snack or 0
+
+    # 计算平均值
+    eating_patterns = {
+        'breakfast': [],
+        'lunch': [],
+        'dinner': [],
+        'snack': []
+    }
+
+    for i in range(7):
+        count = weekday_patterns['count'][i] or 1
+        eating_patterns['breakfast'].append(round(weekday_patterns['breakfast'][i] / count, 1))
+        eating_patterns['lunch'].append(round(weekday_patterns['lunch'][i] / count, 1))
+        eating_patterns['dinner'].append(round(weekday_patterns['dinner'][i] / count, 1))
+        eating_patterns['snack'].append(round(weekday_patterns['snack'][i] / count, 1))
+
+    # 饮食习惯数据
+    eating_habits = {
+        'eat_much': eat_much,
+        'not_eat_much': not_eat_much
+    }
+
+    return templates.TemplateResponse('charts.html', {
+        'request': request,
+        'user': user,
+        'dates': dates,
+        'calories': calories,
+        'meals': meals,
+        'eating_habits': eating_habits,
+        'calorie_deficit': calorie_deficit,
+        'eating_patterns': eating_patterns,
+        'streaks': streaks
     })
 
 @app.get('/u/{username}/detail')
