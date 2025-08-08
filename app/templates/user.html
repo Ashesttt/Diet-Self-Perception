@@ -21,23 +21,63 @@
 
         <div class="stats-section">
             <h2>统计概览</h2>
-            <p>总记录天数: {{ stats.total_days }}</p>
-            <p>吃多了: {{ stats.eat_much_count }}次 ({{ stats.eat_much_percent }}%)</p>
-            <p>没吃多: {{ stats.not_eat_much_count }}次 ({{ stats.not_eat_much_percent }}%)</p>
-            <p>最近连续没吃多: {{ stats.current_not_eat_much_streak }}天</p>
-            <p>最近连续吃多: {{ stats.current_eat_much_streak }}天</p>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <p class="stat-label">总记录天数</p>
+                    <p class="stat-value">{{ stats.total_days }}</p>
+                </div>
+                
+                <div class="stat-card">
+                    <p class="stat-label">吃多了</p>
+                    <p class="stat-value">{% if stats.eat_much_count is defined %}{{ stats.eat_much_count }}次 ({% if stats.eat_much_percent is defined %}{{ stats.eat_much_percent }}%{% else %}0%{% endif %}){% else %}0次 (0%){% endif %}</p>
+                    <div class="progress-bar">
+                        <div class="progress" style='width: {% if stats.eat_much_percent is defined %}{{ stats.eat_much_percent }}%{% else %}0%{% endif %}; background-color: #ff4444;'></div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <p class="stat-label">没吃多</p>
+                    <p class="stat-value">{% if stats.not_eat_much_count is defined %}{{ stats.not_eat_much_count }}次 ({% if stats.not_eat_much_percent is defined %}{{ stats.not_eat_much_percent }}%{% else %}0%{% endif %}){% else %}0次 (0%){% endif %}</p>
+                    <div class="progress-bar">
+                        <div class="progress" style="width: {% if stats.not_eat_much_percent is defined %}{{ stats.not_eat_much_percent }}%{% else %}0%{% endif %}; background-color: #00C851;"></div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <p class="stat-label">最近连续没吃多</p>
+                    <p class="stat-value">{{ stats.current_not_eat_much_streak }}天</p>
+                </div>
+                
+                <div class="stat-card">
+                    <p class="stat-label">最近连续吃多</p>
+                    <p class="stat-value">{{ stats.current_eat_much_streak }}天</p>
+                </div>
+                
+                <div class="stat-card">
+                    <p class="stat-label">最长连续没吃多</p>
+                    <p class="stat-value">{{ stats.max_not_eat_much_streak }}天</p>
+                </div>
+                
+                <div class="stat-card">
+                    <p class="stat-label">最长连续吃多</p>
+                    <p class="stat-value">{{ stats.max_eat_much_streak }}天</p>
+                </div>
+                
+                <div class="stat-card">
+                    <p class="stat-label">平均每周记录</p>
+                    <p class="stat-value">{{ stats.avg_weekly_records }}次</p>
+                </div>
+            </div>
         </div>
 
-        <div class="history-section">
-            <h2>历史记录</h2>
-            <ul class="record-list">
-                {% for record in records %}
-                <li>{{ record.record_date }} - {{ '吃多了' if record.choice == 'eat_much' else '没吃多' }}</li>
-                {% endfor %}
-            </ul>
-        </div>
+    <div class="button-group">
+        <button class="btn" style="background: #4CAF50 !important; color: white !important; border: none !important;" onclick="location.href='/u/{{ user.username }}/statistics'">统计总览</button>
+    </div>
     <div class="button-group">
         <button class="btn" style="background: #2196F3 !important; color: white !important; border: none !important;" onclick="location.href='/u/{{ user.username }}/setting'">个人设置</button>
+    </div>
+    <div class="button-group">
+        <button class="btn" style="background: #FF9800 !important; color: white !important; border: none !important;" onclick="location.href='/u/{{ user.username }}/history'">历史记录</button>
     </div>
 
     </div>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ user.username }}的统计总览</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ user.username }}的统计总览</h1>
+            <div class="button-group">
+                <button class="btn" style="background: #0f0929; color: white" onclick="location.href='/u/{{ user.username }}'">返回主页</button>
+            </div>
+        </div>
+
+        <div class="stats-section">
+            <h2>核心统计</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <p class="stat-label">总记录天数</p>
+                    <p class="stat-value">{{ stats.total_days }}</p>
+                </div>
+                
+                <div class="stat-card">
+                    <p class="stat-label">吃多了</p>
+                    <p class="stat-value">{{ stats.eat_much_count }}次 ({{ stats.eat_much_percent }}%)</p>
+                    <div class="progress-bar">
+                        <div class="progress" style='width: {{ stats.eat_much_percent }}%; background-color: #ff4444;'></div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <p class="stat-label">没吃多</p>
+                    <p class="stat-value">{{ stats.not_eat_much_count }}次 ({{ stats.not_eat_much_percent }}%)</p>
+                    <div class="progress-bar">
+                        <div class="progress" style="width: {{ stats.not_eat_much_percent }}%; background-color: #00C851;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stats-section">
+            <h2>健康指标</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <p class="stat-label">平均热量缺口</p>
+                    <p class="stat-value">{{ stats.avg_calorie_deficit }} 千卡</p>
+                </div>
+
+                <div class="stat-card">
+                    <p class="stat-label">总的热量缺口</p>
+                    <p class="stat-value">{{ stats.total_calorie_deficit }} 千卡</p>
+                </div>
+                
+                <div class="stat-card">
+                    <p class="stat-label">累计消耗脂肪</p>
+                    <p class="stat-value">{{ stats.total_fat_lost_kg }} 千克</p>
+                </div>
+
+                <div class="stat-card">
+                    <p class="stat-label">热量缺口达标率</p>
+                    <p class="stat-value">{{ stats.calorie_deficit_rate }}%</p>
+                    <div class="progress-bar">
+                        <div class="progress" style="width: {{ stats.calorie_deficit_rate }}%; background-color: #9C27B0;"></div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <p class="stat-label">连续打卡天数</p>
+                    <p class="stat-value">{{ stats.current_streak }}天</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stats-section">
+            <h2>饮食详情统计</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <p class="stat-label">早餐平均摄入卡路里</p>
+                    <p class="stat-value">{{ stats.avg_breakfast_calories }} 千卡</p>
+                </div>
+
+                <div class="stat-card">
+                    <p class="stat-label">午餐平均摄入卡路里</p>
+                    <p class="stat-value">{{ stats.avg_lunch_calories }} 千卡</p>
+                </div>
+
+                <div class="stat-card">
+                    <p class="stat-label">晚餐平均摄入卡路里</p>
+                    <p class="stat-value">{{ stats.avg_dinner_calories }} 千卡</p>
+                </div>
+
+                <div class="stat-card">
+                    <p class="stat-label">零食平均摄入卡路里</p>
+                    <p class="stat-value">{{ stats.avg_snack_calories }} 千卡</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stats-section">
+            <h2>其他统计</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <p class="stat-label">最近连续没吃多</p>
+                    <p class="stat-value">{{ stats.current_not_eat_much_streak }}天</p>
+                </div>
+                
+                <div class="stat-card">
+                    <p class="stat-label">最近连续吃多</p>
+                    <p class="stat-value">{{ stats.current_eat_much_streak }}天</p>
+                </div>
+                
+                <div class="stat-card">
+                    <p class="stat-label">最长连续没吃多</p>
+                    <p class="stat-value">{{ stats.max_not_eat_much_streak }}天</p>
+                </div>
+                
+                <div class="stat-card">
+                    <p class="stat-label">最长连续吃多</p>
+                    <p class="stat-value">{{ stats.max_eat_much_streak }}天</p>
+                </div>
+                
+                <div class="stat-card">
+                    <p class="stat-label">平均每周记录</p>
+                    <p class="stat-value">{{ stats.avg_weekly_records }}次</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ user.username }}的历史记录</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ user.username }}的历史记录</h1>
+            <div class="button-group">
+                <button class="btn" style="background: #0f0929; color: white" onclick="location.href='/u/{{ user.username }}'">返回主页</button>
+            </div>
+        </div>
+
+        <div class="history-section">
+            <h2>历史记录</h2>
+            <ul class="record-list">
+                {% for record in records %}
+                <li>{{ record.record_date }} - {{ '吃多了' if record.choice == 'eat_much' else '没吃多' }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
