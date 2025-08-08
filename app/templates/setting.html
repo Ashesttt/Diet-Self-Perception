@@ -15,6 +15,10 @@
             </div>
         </div>
 
+        {% if request.query_params.new_user == 'true' %}
+        <div class="message-box" style="background-color: #fff3cd; color: #856404;">检测到您是新用户，先填写你的相关信息。</div>
+        {% endif %}
+
         {% if message %}
         <div class="message-box">{{ message }}</div>
         {% endif %}

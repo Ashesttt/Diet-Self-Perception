@@ -64,6 +64,12 @@ async def user_page(request: Request, username: str, db: Session = Depends(get_d
         db.commit()
         db.refresh(user)
 
+    # 检查用户是否填写了个人信息
+    if not all([user.weight, user.height, user.age, user.gender]):
+        # 如果没有填写，重定向到设置页面
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=f'/u/{username}/setting?new_user=true')
+
     # 检查今日记录
     today = date.today()
     existing_record = db.query(Record).filter(
