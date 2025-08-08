@@ -37,7 +37,7 @@ class Record(Base):
     record_date = Column(Date)
     choice = Column(String(20))
 
-engine = create_engine('sqlite:///./data.db')
+engine = create_engine('sqlite:///./data/data.db')
 Base.metadata.create_all(bind=engine)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
