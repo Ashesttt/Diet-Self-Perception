@@ -54,6 +54,44 @@ import os
 app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 
+@app.get('/')
+async def root(request: Request):
+    return templates.TemplateResponse('root.html', {'request': request})
+
+@app.get('/register')
+async def register_page(request: Request):
+    return templates.TemplateResponse('register.html', {'request': request})
+
+@app.post('/register')
+async def register_user(request: Request, db: Session = Depends(get_db)):
+    data = await request.form()
+    username = data.get('username')
+    
+    # 检查用户名是否已存在
+    existing_user = db.query(User).filter(User.username == username).first()
+    if existing_user:
+        return templates.TemplateResponse('register.html', {
+            'request': request,
+            'error': '用户名已被注册，请更换一个'
+        })
+    
+    # 创建新用户
+    new_user = User(username=username)
+    db.add(new_user)
+    db.commit()
+    
+    return templates.TemplateResponse('register.html', {
+        'request': request,
+        'success': True,
+        'username': username
+    })
+
+@app.get('/check_user')
+async def check_user(username: str, db: Session = Depends(get_db)):
+    # 检查用户是否存在
+    user = db.query(User).filter(User.username == username).first()
+    return {'exists': user is not None}
+
 @app.get('/u/{username}')
 async def user_page(request: Request, username: str, db: Session = Depends(get_db)):
     # 获取或创建用户
@@ -185,7 +223,7 @@ async def submit_setting(request: Request, username: str, db: Session = Depends(
     return templates.TemplateResponse('setting.html', {
         'request': request, 
         'user': user, 
-        'message': '设置已保存，您的基础代谢率为: {:.2f} kcal/天'.format(user.bmr)
+        'message': '设置已保存，您的基础代谢率为: {:.2f} kcal/天。<br>系统将在3秒后自动重定向到主页。'.format(user.bmr)
     })
 
 @app.get('/u/{username}/charts')

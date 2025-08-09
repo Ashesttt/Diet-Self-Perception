@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>饮食记录 - 重定向中</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 80vh;
+        }
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="loading-container">
+            <div class="spinner"></div>
+            <p>正在检查登录状态...</p>
+        </div>
+    </div>
+
+    <script>
+        // 检查本地存储
+        document.addEventListener('DOMContentLoaded', function() {
+            const username = localStorage.getItem('current_username');
+            const messageElement = document.createElement('p');
+            messageElement.style.textAlign = 'center';
+            messageElement.style.marginTop = '20px';
+            
+            const container = document.querySelector('.loading-container');
+            container.appendChild(messageElement);
+            
+            if (username) {
+                // 如果已登录，显示欢迎信息并延迟重定向
+                messageElement.textContent = `欢迎回来，${username}！2秒后跳转到您的个人页面...`;
+                setTimeout(function() {
+                    window.location.href = `/u/${username}`;
+                }, 2000);
+            } else {
+                // 否则显示注册提示并延迟重定向
+                messageElement.textContent = '未检测到登录状态，2秒后跳转到注册页面...';
+                setTimeout(function() {
+                    window.location.href = '/register';
+                }, 2000);
+            }
+        });
+    </script>
+</body>
+</html>

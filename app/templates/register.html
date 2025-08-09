@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>用户注册 - 饮食记录</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .loading { display: none; }
+        .loading.show { display: inline-block; }
+        .spinner-small {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .info-box {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            background-color: #e3f2fd;
+            color: #0d47a1;
+        }
+        .success-box {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>用户注册</h1>
+        </div>
+
+        <div class="info-box">
+            <h3>关于本项目</h3>
+            <p>这是一个开源免费的饮食记录工具，帮助您追踪每日饮食情况，了解自己的饮食习惯。</p>
+            <p>注册后，您可以记录每日饮食，查看统计数据和图表，并设置个人信息以获得更准确的健康建议。</p>
+        </div>
+
+        {% if error %}
+        <div class="message-box" style="background-color: #ffebee; color: #c62828;">{{ error }}</div>
+        {% endif %}
+
+        {% if success %}
+        <div class="success-box">
+            <p>注册成功！您的用户名为: <strong>{{ username }}</strong></p>
+            <p>即将跳转到个人设置页面...</p>
+        </div>
+        <script>
+            // 延迟2秒后重定向
+            setTimeout(function() {
+                window.location.href = `/u/{{ username }}`;
+                // 设置本地存储
+                localStorage.setItem('current_username', '{{ username }}');
+            }, 2000);
+        </script>
+        {% else %}
+        <form id="register-form" method="post" action="/register">
+            <div class="form-group">
+                <label for="username">请选择用户名</label>
+                <input type="text" id="username" name="username" required placeholder="例如: jerry, mxy">
+                <p class="hint">用户名只能包含字母、数字和下划线，长度为3-20个字符</p>
+            </div>
+
+            <div class="button-group">
+                <button type="submit" class="btn btn-green" id="submit-btn">
+                    注册
+                    <span class="spinner-small loading" id="loading-spinner"></span>
+                </button>
+            </div>
+        </form>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <p>已有账号？<a href="javascript:void(0)" id="direct-access">直接访问</a></p>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // 添加加载状态
+        document.getElementById('register-form').addEventListener('submit', function() {
+            document.getElementById('submit-btn').disabled = true;
+            document.getElementById('loading-spinner').classList.add('show');
+        });
+
+        // 直接访问功能
+        document.getElementById('direct-access').addEventListener('click', function() {
+            const username = prompt('请输入您的用户名:');
+            if (username) {
+                // 显示加载状态
+                const spinner = document.getElementById('loading-spinner');
+                spinner.classList.add('show');
+                
+                // 检查用户是否存在
+                fetch(`/check_user?username=${encodeURIComponent(username)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        spinner.classList.remove('show');
+                        if (data.exists) {
+                            // 用户存在，显示成功提示
+                            const successBox = document.createElement('div');
+                            successBox.className = 'success-box';
+                            successBox.innerHTML = `
+                                <p>登录成功！欢迎回来，${username}！</p>
+                                <p>即将跳转到个人页面...</p>
+                            `;
+                            
+                            const container = document.querySelector('.container');
+                            const form = document.getElementById('register-form');
+                            if (form) {
+                                form.style.display = 'none';
+                            }
+                            container.insertBefore(successBox, container.firstChild);
+                            
+                            // 设置本地存储
+                            localStorage.setItem('current_username', username);
+                            
+                            // 延迟2秒后重定向
+                            setTimeout(function() {
+                                window.location.href = `/u/${username}`;
+                            }, 2000);
+                        } else {
+                            // 用户不存在，显示错误提示
+                            alert('没有找到该用户，请先注册！');
+                        }
+                    })
+                    .catch(error => {
+                        spinner.classList.remove('show');
+                        console.error('Error checking user:', error);
+                        alert('检查用户时出错，请稍后再试！');
+                    });
+            }
+        });
+
+        // 用户名验证
+        document.getElementById('username').addEventListener('input', function(e) {
+            const username = e.target.value;
+            const pattern = /^[a-zA-Z0-9_]{3,20}$/;
+            const submitBtn = document.getElementById('submit-btn');
+            const hint = document.querySelector('.hint');
+            
+            if (pattern.test(username)) {
+                submitBtn.disabled = false;
+                hint.style.color = '#757575'; // 正常颜色
+                hint.textContent = '用户名只能包含字母、数字和下划线，长度为3-20个字符';
+            } else {
+                submitBtn.disabled = true;
+                hint.style.color = '#c62828'; // 错误颜色
+                if (username.length < 3 || username.length > 20) {
+                    hint.textContent = '用户名长度必须为3-20个字符';
+                } else {
+                    hint.textContent = '用户名只能包含字母、数字和下划线';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
